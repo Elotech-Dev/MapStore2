@@ -50,6 +50,9 @@ const LocaleUtils = {
     },
     setSupportedLocales: function(locales) {
         supportedLocales = locales;
+        let localeData = [];
+        Object.keys(locales).map(key => { localeData.push(...locales[key].localeData); });
+        addLocaleData(localeData);
     },
     normalizeLocaleCode: function(localeCode) {
         var retval;

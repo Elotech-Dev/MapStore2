@@ -135,7 +135,7 @@ const MapPlugin = React.createClass({
             zoomControl: false,
             mapLoadingMessage: "map.loading",
             loadingSpinner: true,
-            tools: ["measurement", "locate", "overview", "scalebar", "draw", "highlight"],
+            tools: ["measurement", "locate", "overview", "scalebar", "draw", "highlight", "selection"],
             options: {},
             mapOptions: {},
             toolsOptions: {

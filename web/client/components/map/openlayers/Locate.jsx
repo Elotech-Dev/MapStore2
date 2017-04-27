@@ -29,23 +29,32 @@ var Locate = React.createClass({
     componentDidMount() {
         if (this.props.map) {
             this.locate = new OlLocate(this.props.map, this.defaultOpt);
+            this.locate.setStrings(this.props.messages);
             this.locate.options.onLocationError = this.onLocationError;
             this.locate.on("propertychange", (e) => {this.onStateChange(e.target.get(e.key)); });
+            this.configureLocate(this.props.status);
         }
     },
     componentWillReceiveProps(newProps) {
-        let state = this.locate.get("state");
         if (newProps.status !== this.props.status) {
-            if ( newProps.status === "ENABLED" && state === "DISABLED") {
-                this.locate.start();
-            }else if (newProps.status === "FOLLOWING" && state === "ENABLED") {
-                this.locate.startFollow();
-            }else if (newProps.status === "DISABLED") {
-                this.locate.stop();
-            }
+            this.configureLocate(newProps.status);
         }
         if (newProps.messages !== this.props.messages) {
             this.locate.setStrings(newProps.messages);
+        }
+
+        if (newProps.projection !== this.props.projection) {
+            this.locate.setProjection(newProps.map.getView().getProjection());
+        }
+    },
+    configureLocate(newStatus) {
+        let state = this.locate.get("state");
+        if ( newStatus === "ENABLED" && state === "DISABLED") {
+            this.locate.start();
+        }else if (newStatus === "FOLLOWING" && state === "ENABLED") {
+            this.locate.startFollow();
+        }else if (newStatus === "DISABLED") {
+            this.locate.stop();
         }
     },
     onStateChange(state) {
@@ -64,11 +73,11 @@ var Locate = React.createClass({
         follow: true,// follow with zoom and pan the user's location
         remainActive: true,
         metric: true,
-        stopFollowingOnDrag: true,
-        keepCurrentZoomLevel: false,
+        stopFollowingOnDrag: false,
+        keepCurrentZoomLevel: true,
         locateOptions: {
             maximumAge: 2000,
-            enableHighAccuracy: false,
+            enableHighAccuracy: true,
             timeout: 10000,
             maxZoom: 18
         }

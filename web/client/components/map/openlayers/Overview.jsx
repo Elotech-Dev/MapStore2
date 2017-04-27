@@ -43,7 +43,8 @@ let Overview = React.createClass({
         this.props.layers.forEach((layerOpt) => {
             olLayers.push(Layers.createLayer(layerOpt.type, layerOpt.options || {}));
         });
-        let opt = assign({}, this.defaultOpt, this.props.overviewOpt, {layers: olLayers});
+        let view = new ol.View({projection: this.props.projection});
+        let opt = assign({}, this.defaultOpt, this.props.overviewOpt, {layers: olLayers, view: view});
         this.overview = new ol.control.OverviewMap(opt);
         if (this.props.map) {
             this.overview.setMap(this.props.map);
@@ -66,6 +67,15 @@ let Overview = React.createClass({
             };
         };
     },
+
+    componentWillReceiveProps(newProps) {
+        if (newProps.projection !== this.props.projection) {
+            const view = new ol.View({projection: newProps.projection});
+            this.overview.getOverviewMap().setView(view);
+        }
+
+    },
+
     render() {
         return null;
     },

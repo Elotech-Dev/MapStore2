@@ -12,6 +12,7 @@ const CHANGE_MOUSE_POINTER = 'CHANGE_MOUSE_POINTER';
 const CHANGE_ZOOM_LVL = 'CHANGE_ZOOM_LVL';
 const PAN_TO = 'PAN_TO';
 const ZOOM_TO_EXTENT = 'ZOOM_TO_EXTENT';
+const ZOOM_TO_POINT = 'ZOOM_TO_POINT';
 const CHANGE_MAP_CRS = 'CHANGE_MAP_CRS';
 const CHANGE_MAP_SCALES = 'CHANGE_MAP_SCALES';
 const CHANGE_MAP_STYLE = 'CHANGE_MAP_STYLE';
@@ -82,6 +83,15 @@ function zoomToExtent(extent, crs) {
     };
 }
 
+function zoomToPoint(pos, zoom, crs) {
+    return {
+        type: ZOOM_TO_POINT,
+        pos,
+        zoom,
+        crs
+    }
+}
+
 function changeRotation(rotation, mapStateSource) {
     return {
         type: CHANGE_ROTATION,
@@ -104,6 +114,7 @@ module.exports = {
     CHANGE_ZOOM_LVL,
     PAN_TO,
     ZOOM_TO_EXTENT,
+    ZOOM_TO_POINT,
     CHANGE_MAP_CRS,
     CHANGE_MAP_SCALES,
     CHANGE_MAP_STYLE,
@@ -115,6 +126,7 @@ module.exports = {
     changeMapCrs,
     changeMapScales,
     zoomToExtent,
+    zoomToPoint,
     panTo,
     changeMapStyle,
     changeRotation

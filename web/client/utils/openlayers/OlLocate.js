@@ -200,4 +200,8 @@ OlLocate.prototype.setStrings = function(newStrings) {
     this.options.strings = assign({}, this.options.strings, newStrings);
 };
 
+OlLocate.prototype.setProjection = function(projection) {
+    this.geolocate.setProjection(projection);
+}
+
 module.exports = OlLocate;

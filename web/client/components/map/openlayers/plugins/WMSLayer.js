@@ -68,12 +68,19 @@ Layers.registerType('wms', {
             source: new ol.source.TileWMS(objectAssign({
               urls: urls,
               params: queryParameters,
+              /*
+              //TODO
               tileGrid: new ol.tilegrid.TileGrid({
                   extent: extent,
                   resolutions: mapUtils.getResolutions(),
                   tileSize: options.tileSize ? options.tileSize : 256,
                   origin: options.origin ? options.origin : [extent[0], extent[1]]
               })
+              */
+                tileGrid: options.tileSize ? ol.tilegrid.createXYZ({
+                  extent: ol.proj.get(CoordinatesUtils.normalizeSRS(options.srs || 'EPSG:3857', options.allowedSRS)).getExtent(),
+                  tileSize: options.tileSize
+              }) : undefined
             }, (options.forceProxy) ? {tileLoadFunction: proxyTileLoadFunction} : {}))
         });
     },
@@ -98,6 +105,10 @@ Layers.registerType('wms', {
                 }
                 return found;
             }, false);
+
+            /*
+
+            //TODO
             if (oldOptions.srs !== newOptions.srs) {
                 const extent = ol.proj.get(CoordinatesUtils.normalizeSRS(newOptions.srs, newOptions.allowedSRS)).getExtent();
                 layer.getSource().tileGrid = new ol.tilegrid.TileGrid({
@@ -107,6 +118,7 @@ Layers.registerType('wms', {
                     origin: newOptions.origin ? newOptions.origin : [extent[0], extent[1]]
                 });
             }
+            */
             if (changed) {
                 layer.getSource().updateParams(objectAssign(newParams, newOptions.params));
             }

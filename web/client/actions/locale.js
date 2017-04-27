@@ -39,6 +39,29 @@ function loadLocale(translationFolder, language) {
         if (!locale) {
             locale = LocaleUtils.getUserLocale();
         }
+        return axios.get((translationFolder || ConfigUtils.getConfigProp('translationsPath')) + '/data.' + locale).then((response) => {
+            if (typeof response.data === "string") {
+                try {
+                    JSON.parse(response.data);
+                } catch(e) {
+                    dispatch(localeError('Locale file broken  for (' + language + '): ' + e.message));
+                }
+            } else {
+                dispatch(changeLocale(response.data));
+            }
+        }).catch((e) => {
+            dispatch(localeError(e));
+        });
+    };
+}
+
+/*
+function loadLocale(translationFolder, language) {
+    return (dispatch) => {
+        let locale = language;
+        if (!locale) {
+            locale = LocaleUtils.getUserLocale();
+        }
         const folders = castArray(translationFolder || ConfigUtils.getConfigProp('translationsPath'));
         Promise.all(folders.map((folder) => {
             return axios.get(folder + '/data.' + locale);
@@ -59,5 +82,6 @@ function loadLocale(translationFolder, language) {
         });
     };
 }
+*/
 
 module.exports = {CHANGE_LOCALE, LOCALE_LOAD_ERROR, loadLocale};
