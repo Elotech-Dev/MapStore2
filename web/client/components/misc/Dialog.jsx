@@ -63,23 +63,23 @@ const Dialog = React.createClass({
                   top: "50%",
                   left: "50%",
                   transform: "translate(-50%, -40%)"
-            }}><Message msgId="loading" /><Spinner spinnerName="circle" noFadeIn/></div></div>);
+            }}><Message msgId="loading" /><Spinner spinnerName="circle" noFadeIn overrideSpinnerClassName="spinner"/></div></div>);
         }
     },
     renderRole(role) {
         return React.Children.toArray(this.props.children).filter((child) => child.props.role === role);
     },
     render() {
-        const dialog = (<Draggable start={this.props.start} handle=".draggable-header, .draggable-header *">
+        const dialog = (<Draggable start={this.props.start} handle=".draggable-header, .draggable-footer, .draggable-header *">
             <div id={this.props.id} style={{zIndex: 3, ...this.props.style}} className={this.props.className + " modal-dialog-container"}>
                 <div className={this.props.headerClassName + " draggable-header"}>
                     {this.renderRole('header')}
                 </div>
-                <div className={this.props.bodyClassName}>
+                <div className={this.props.bodyClassName + " draggable-body"}>
                     {this.renderLoading()}
                     {this.renderRole('body')}
                 </div>
-                {this.hasRole('footer') ? <div className={this.props.footerClassName}>
+                {this.hasRole('footer') ? <div className={this.props.footerClassName + " draggable-footer"} >
                     {this.renderRole('footer')}
                 </div> : <span/>}
             </div>
