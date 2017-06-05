@@ -70,7 +70,7 @@ const Dialog = React.createClass({
         return React.Children.toArray(this.props.children).filter((child) => child.props.role === role);
     },
     render() {
-        const dialog = (<Draggable start={this.props.start} handle=".draggable-header, .draggable-body, .draggable-header *">
+        const dialog = (<Draggable start={this.props.start} handle=".draggable-header, .draggable-footer, .draggable-header *">
             <div id={this.props.id} style={{zIndex: 3, ...this.props.style}} className={this.props.className + " modal-dialog-container"}>
                 <div className={this.props.headerClassName + " draggable-header"}>
                     {this.renderRole('header')}
@@ -79,7 +79,7 @@ const Dialog = React.createClass({
                     {this.renderLoading()}
                     {this.renderRole('body')}
                 </div>
-                {this.hasRole('footer') ? <div className={this.props.footerClassName}>
+                {this.hasRole('footer') ? <div className={this.props.footerClassName + " draggable-footer"} >
                     {this.renderRole('footer')}
                 </div> : <span/>}
             </div>
