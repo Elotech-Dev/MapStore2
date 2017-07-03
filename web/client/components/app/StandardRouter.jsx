@@ -10,7 +10,7 @@ const {connect} = require('react-redux');
 
 const Debug = require('../development/Debug');
 
-const {Router, Route, hashHistory} = require('react-router');
+const {Router, Route, browserHistory} = require('react-router');
 
 const Localized = require('../I18N/Localized');
 
@@ -57,7 +57,7 @@ const StandardRouter = React.createClass({
             <div className={this.props.className}>
                 <Theme {...this.props.themeCfg}/>
                 <Localized messages={this.props.locale.messages} locale={this.props.locale.current} loadingError={this.props.locale.localeError}>
-                    <Router history={hashHistory}>
+                    <Router history={browserHistory}>
                         {this.renderPages()}
                     </Router>
                 </Localized>
