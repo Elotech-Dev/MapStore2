@@ -42,6 +42,9 @@ var Locate = React.createClass({
         if (newProps.messages !== this.props.messages) {
             this.locate.setStrings(newProps.messages);
         }
+        if (newProps.projection !== this.props.projection) {
+            this.locate.setProjection(newProps.map.getView().getProjection());
+        }
     },
     configureLocate(newStatus) {
         let state = this.locate.get("state");

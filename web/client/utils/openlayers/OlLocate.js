@@ -82,7 +82,7 @@ OlLocate.prototype.start = function() {
     if (!this.p) {
         this.set("state", "LOCATING");
     }else {
-        this._updatePosFt();
+        this._updatePosFt(true);
     }
 };
 OlLocate.prototype.startFollow = function() {
@@ -117,7 +117,7 @@ OlLocate.prototype.stopFollow = function() {
     this.set("state", "ENABLED");
 };
 
-OlLocate.prototype._updatePosFt = function() {
+OlLocate.prototype._updatePosFt = function(forceUpdateView) {
     let state = this.get("state");
     let nState = (this.follow) ? "FOLLOWING" : "ENABLED";
     if (nState !== state) {
@@ -135,7 +135,7 @@ OlLocate.prototype._updatePosFt = function() {
     if (!this.popup.hidden) {
         this._updatePopUpCnt();
     }
-    if (this.follow) {
+    if (this.follow || forceUpdateView) {
         this.updateView(point);
     }
     // Update only once
@@ -144,12 +144,10 @@ OlLocate.prototype._updatePosFt = function() {
     }
 };
 
-OlLocate.prototype.updateView = function(point) {
-    if (this.follow) {
-        this.map.getView().setCenter(point.getCoordinates());
-        if (!this.options.keepCurrentZoomLevel) {
-            this.map.getView().setZoom(this.options.locateOptions.maxZoom);
-        }
+OlLocate.prototype.updateView = function(point,) {
+    this.map.getView().setCenter(point.getCoordinates());
+    if (!this.options.keepCurrentZoomLevel) {
+        this.map.getView().setZoom(this.options.locateOptions.maxZoom);
     }
 };
 OlLocate.prototype._updatePopUpCnt = function() {
@@ -199,5 +197,9 @@ OlLocate.prototype._getDefaultStyles = function() {
 OlLocate.prototype.setStrings = function(newStrings) {
     this.options.strings = assign({}, this.options.strings, newStrings);
 };
+
+OlLocate.prototype.setProjection = function(projection) {
+    this.geolocate.setProjection(projection);
+}
 
 module.exports = OlLocate;
