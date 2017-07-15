@@ -151,7 +151,7 @@ Layers.registerType('vector', {
             msId: options.id,
             source: source,
             zIndex: options.zIndex,
-            style: (!options.overrideOLStyle) ? (feature) => styleFunction(feature, options) : style
+            style: (!options.nativeStyle && !options.overrideOLStyle) ? (feature) => styleFunction(feature, options) : style
         });
     },
     update: (layer, newOptions, oldOptions) => {

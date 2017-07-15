@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016, GeoSolutions Sas.
  * All rights reserved.
  *
@@ -7,8 +7,26 @@
  */
 
 const assign = require('object-assign');
-const {omit, isObject, head, isArray} = require('lodash');
+const {omit, isObject, head, isArray, isString} = require('lodash');
 const {combineReducers} = require('redux');
+const {connect} = require('react-redux');
+const url = require('url');
+
+const {combineEpics} = require('redux-observable');
+
+const {memoize, get} = require('lodash');
+
+const filterState = memoize((state, monitor) => {
+    return monitor.reduce((previous, current) => {
+        return assign(previous, {
+            [current.name]: get(state, current.path)
+        });
+    }, {});
+}, (state, monitor) => {
+    return monitor.reduce((previous, current) => {
+        return previous + JSON.stringify(get(state, current.path));
+    }, '');
+});
 
 const isPluginConfigured = (pluginsConfig, plugin) => {
     const cfg = pluginsConfig;
@@ -16,11 +34,40 @@ const isPluginConfigured = (pluginsConfig, plugin) => {
     return head(cfg.filter((cfgObj) => cfgObj.name === pluginName || cfgObj === pluginName));
 };
 
-const showIn = (cfg, name, id, isDefault) => {
-    return ((id && cfg.showIn && cfg.showIn.indexOf(id) !== -1) ||
-            (cfg.showIn && cfg.showIn.indexOf(name) !== -1) ||
+/*eslint-disable */
+const parseExpression = (state = {}, context = {}, value) => {
+    const searchExpression = /^\{(.*?)\}$/;
+    const expression = searchExpression.exec(value);
+    const request = url.parse(location.href, true);
+    if (expression !== null) {
+        return eval(expression[1]);
+    }
+    return value;
+};
+/*eslint-enable */
+/**
+ * Parses a expression string "{some javascript}" and evaluate it.
+ * The expression will be evalueted getting as parameters the state and the context and the request.
+ * @memberof utils.PluginsUtils
+ * @param  {object} state      the state context
+ * @param  {object} context    the context element
+ * @param  {string} expression the expression to parse, it's a string
+ * @return {object}            the result of the expression
+ * @example "{1===0 && request.query.queryParam1=paramValue1}"
+ * @example "{1===0 && context.el1 === 'checked'}"
+ */
+const handleExpression = (state, context, expression) => {
+    if (isString(expression) && expression.indexOf('{') === 0) {
+        return parseExpression(state, context, expression);
+    }
+    return expression;
+};
+
+const showIn = (state, requires, cfg, name, id, isDefault) => {
+    return ((id && cfg.showIn && handleExpression(state, requires, cfg.showIn).indexOf(id) !== -1) ||
+            (cfg.showIn && handleExpression(state, requires, cfg.showIn).indexOf(name) !== -1) ||
             (!cfg.showIn && isDefault)) &&
-            !((cfg.hideFrom && cfg.hideFrom.indexOf(name) !== -1) || (id && cfg.hideFrom && cfg.hideFrom.indexOf(id) !== -1));
+            !((cfg.hideFrom && handleExpression(state, requires, cfg.hideFrom).indexOf(name) !== -1) || (id && cfg.hideFrom && handleExpression(state, requires, cfg.hideFrom).indexOf(id) !== -1));
 };
 
 const includeLoaded = (name, loadedPlugins, plugin) => {
@@ -44,12 +91,25 @@ const getMorePrioritizedContainer = (pluginImpl, plugins, priority) => {
     }, {plugin: null, priority: priority});
 };
 
-const getPluginItems = (plugins, pluginsConfig, name, id, isDefault, loadedPlugins) => {
+const parsePluginConfig = (state, requires, cfg) => {
+    if (isArray(cfg)) {
+        return cfg.map((value) => parsePluginConfig(state, requires, value));
+    }
+    if (isObject(cfg)) {
+        return Object.keys(cfg).reduce((previous, current) => {
+            const value = cfg[current];
+            return assign(previous, {[current]: parsePluginConfig(state, requires, value)});
+        }, {});
+    }
+    return parseExpression(state, requires, cfg);
+};
+
+const getPluginItems = (state, plugins, pluginsConfig, name, id, isDefault, loadedPlugins) => {
     return Object.keys(plugins)
             .filter((plugin) => plugins[plugin][name])
             .filter((plugin) => {
                 const cfgObj = isPluginConfigured(pluginsConfig, plugin);
-                return cfgObj && showIn(cfgObj, name, id, isDefault);
+                return cfgObj && showIn(state, plugins.requires, cfgObj, name, id, isDefault);
             })
             .filter((plugin) => getMorePrioritizedContainer(plugins[plugin], pluginsConfig, plugins[plugin][name].priority || 0).plugin === null)
             .map((plugin) => {
@@ -61,52 +121,79 @@ const getPluginItems = (plugins, pluginsConfig, name, id, isDefault, loadedPlugi
                     item,
                     pluginCfg.override && pluginCfg.override[name] || {},
                     {
-                        cfg: pluginCfg && pluginCfg.cfg || undefined
+                        cfg: pluginCfg && parsePluginConfig(state, plugins.requires, pluginCfg.cfg || {}) || undefined
                     },
                     {
                         plugin: pluginImpl,
-                        items: getPluginItems(plugins, pluginsConfig, pluginName, null, true, loadedPlugins)
+                        items: getPluginItems(state, plugins, pluginsConfig, pluginName, null, true, loadedPlugins)
                     });
             });
 };
 
-/*eslint-disable */
-const parseExpression = (requires, value) => {
-    const searchExpression = /^\{(.*?)\}$/;
-    const context = requires || {};
-    const expression = searchExpression.exec(value);
-    if (expression !== null) {
-        return eval(expression[1]);
-    }
-    return value;
-};
-/*eslint-enable */
-
-
-const parsePluginConfig = (requires, cfg) => {
-    if (isArray(cfg)) {
-        return cfg.map((value) => parsePluginConfig(requires, value));
-    }
-    if (isObject(cfg)) {
-        return Object.keys(cfg).reduce((previous, current) => {
-            const value = cfg[current];
-            return assign(previous, {[current]: parsePluginConfig(requires, value)});
-        }, {});
-    }
-    return parseExpression(requires, cfg);
-};
 const getReducers = (plugins) => Object.keys(plugins).map((name) => plugins[name].reducers)
                             .reduce((previous, current) => assign({}, previous, current), {});
+const getEpics = (plugins) => Object.keys(plugins).map((name) => plugins[name].epics)
+                            .reduce((previous, current) => assign({}, previous, current), {});
 
+const pluginsMergeProps = (stateProps, dispatchProps, ownProps) => {
+    const {pluginCfg, ...otherProps} = ownProps;
+    return assign({}, otherProps, stateProps, dispatchProps, pluginCfg || {});
+};
+
+/**
+ * Utilities to manage plugins
+ * @class
+ * @memberof utils
+ */
 const PluginsUtils = {
+    /**
+     * Produces the reducers from the plugins, combined with other plugins
+     * @param {array} plugins the plugins
+     * @param {object} [reducers] other reducers
+     * @returns {function} a reducer made from the plugins' reducers and the reducers passed as 2nd parameter
+     */
     combineReducers: (plugins, reducers) => {
         const pluginsReducers = getReducers(plugins);
         return combineReducers(assign({}, reducers, pluginsReducers));
     },
+    /**
+     * Produces the rootEpic for the plugins, combined with other epics passed as 2nd argument
+     * @param {array} plugins the plugins
+     * @param {function[]} [epics] the epics to add to the plugins' ones
+     * @return {function} the rootEpic, obtained combining plugins' epics and the other epics passed as argument.
+     */
+    combineEpics: (plugins, epics = {}) => {
+        const pluginEpics = assign({}, getEpics(plugins), epics);
+        return combineEpics( ...Object.keys(pluginEpics).map(k => pluginEpics[k]));
+    },
     getReducers,
+    filterState,
     getPlugins: (plugins) => Object.keys(plugins).map((name) => plugins[name])
                                 .reduce((previous, current) => assign({}, previous, omit(current, 'reducers')), {}),
-    getPluginDescriptor: (plugins, pluginsConfig, pluginDef, loadedPlugins = {}) => {
+    /**
+     * provide the pluginDescriptor for a given plugin, with a state and a configuration
+     * @param {object} state the state. This is required to laod plugins that depend from the state itself
+     * @param {object} plugins all the plugins, like this:
+     * ```
+     *  {
+     *      P1Plugin: connectdComponent1,
+     *      P2Plugin: connectdComponent2
+     *  }
+     * ```
+     * @param {array} pluginConfig the configurations of the plugins
+     * @param {object} [loadedPlugins] the plugins loaded with `require.ensure`
+     * @return {object} a pluginDescriptor like this:
+     * ```
+     * {
+     *    id: "P1",
+     *    name: "P1",
+     *    items: // the contained items
+     *    cfg: // the configuration
+     *    impl // the real implementation
+     * }
+     * ```
+     */
+    getPluginDescriptor: (state, plugins, pluginsConfig, pluginDef, loadedPlugins = {}) => {
         const name = isObject(pluginDef) ? pluginDef.name : pluginDef;
         const id = isObject(pluginDef) ? pluginDef.id : null;
         const stateSelector = isObject(pluginDef) ? pluginDef.stateSelector : id || undefined;
@@ -114,16 +201,30 @@ const PluginsUtils = {
         const pluginKey = (isObject(pluginDef) ? pluginDef.name : pluginDef) + 'Plugin';
         const impl = plugins[pluginKey];
         if (!impl) {
-            throw "the plugin \"" + pluginKey + " \"is undefinded";
+            return null;
         }
         return {
             id: id || name,
             name,
             impl: includeLoaded(name, loadedPlugins, (impl.loadPlugin || impl.displayName) ? impl : impl(stateSelector)),
-            cfg: isObject(pluginDef) ? parsePluginConfig(plugins.requires, pluginDef.cfg) : {},
-            items: getPluginItems(plugins, pluginsConfig, name, id, isDefault, loadedPlugins)
+            cfg: isObject(pluginDef) ? parsePluginConfig(state, plugins.requires, pluginDef.cfg) : {},
+            items: getPluginItems(state, plugins, pluginsConfig, name, id, isDefault, loadedPlugins)
         };
     },
+    /**
+     * Custom react-redux connect function that can override state property with plugin config.
+     * The plugin config properties are taken from the **pluginCfg** property.
+
+     * @param {function} [mapStateToProps] state to properties selector
+     * @param {function} [mapDispatchToProps] dispatchable actions selector
+     * @param {function} [mergeProps] merge function, if not defined, the internal override applies
+     * @param {object} [options] connect options (look at react-redux docs for details)
+     * @returns {function} funtion to be applied to the dumb object to connect it to state / dispatchers
+     */
+    connect: (mapStateToProps, mapDispatchToProps, mergeProps, options) => {
+        return connect(mapStateToProps, mapDispatchToProps, mergeProps || pluginsMergeProps, options);
+    },
+    handleExpression,
     getMorePrioritizedContainer
 };
 module.exports = PluginsUtils;

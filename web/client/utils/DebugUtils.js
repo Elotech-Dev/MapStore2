@@ -8,7 +8,7 @@
 var url = require('url');
 
 var {createStore, compose, applyMiddleware} = require('redux');
-var thunkMiddleware = require('redux-thunk').default;
+var thunkMiddleware = require('redux-thunk');
 
 
 const urlQuery = url.parse(window.location.href, true).query;

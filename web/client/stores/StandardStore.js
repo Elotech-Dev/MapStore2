@@ -15,29 +15,40 @@ const layers = require('../reducers/layers');
 const mapConfig = require('../reducers/config');
 
 const DebugUtils = require('../utils/DebugUtils');
-const {combineReducers} = require('../utils/PluginsUtils');
+const {compose} = require('redux');
+const {combineReducers, combineEpics} = require('../utils/PluginsUtils');
 
 const LayersUtils = require('../utils/LayersUtils');
 const {CHANGE_BROWSER_PROPERTIES} = require('../actions/browser');
 const {persistStore, autoRehydrate} = require('redux-persist');
+const {createEpicMiddleware} = require('redux-observable');
 
 const SecurityUtils = require('../utils/SecurityUtils');
+const ListenerEnhancer = require('@carnesen/redux-add-action-listener-enhancer').default;
 
-module.exports = (initialState = {defaultState: {}, mobile: {}}, appReducers = {}, plugins, storeOpts) => {
+const {syncHistory, routeReducer} = require('react-router-redux');
+const {hashHistory} = require('react-router');
+const reduxRouterMiddleware = syncHistory(hashHistory);
+
+module.exports = (initialState = {defaultState: {}, mobile: {}}, appReducers = {}, appEpics = {}, plugins, storeOpts = {}) => {
     const allReducers = combineReducers(plugins, {
         ...appReducers,
         localConfig: require('../reducers/localConfig'),
         locale: require('../reducers/locale'),
         browser: require('../reducers/browser'),
         controls: require('../reducers/controls'),
+        theme: require('../reducers/theme'),
         help: require('../reducers/help'),
         map: () => {return null; },
         mapInitialConfig: () => {return null; },
-        layers: () => {return null; }
+        layers: () => {return null; },
+        routing: routeReducer
     });
-    const defaultState = initialState.defaultState;
-    const mobileOverride = initialState.mobile;
-
+    const rootEpic = combineEpics(plugins, appEpics);
+    const optsState = storeOpts.initialState || {defaultState: {}, mobile: {}};
+    const defaultState = assign({}, initialState.defaultState, optsState.defaultState);
+    const mobileOverride = assign({}, initialState.mobile, optsState.mobile);
+    const epicMiddleware = createEpicMiddleware(rootEpic);
     const rootReducer = (state, action) => {
         let mapState = createHistory(LayersUtils.splitMapAndLayers(mapConfig(state, action)));
         let newState = {
@@ -55,11 +66,17 @@ module.exports = (initialState = {defaultState: {}, mobile: {}}, appReducers = {
         return newState;
     };
     let store;
+    let enhancer;
     if (storeOpts && storeOpts.persist) {
-        store = DebugUtils.createDebugStore(rootReducer, defaultState, [], autoRehydrate());
+        enhancer = autoRehydrate();
+    }
+    if (storeOpts && storeOpts.notify) {
+        enhancer = enhancer ? compose(enhancer, ListenerEnhancer) : ListenerEnhancer;
+    }
+    store = DebugUtils.createDebugStore(rootReducer, defaultState, [epicMiddleware, reduxRouterMiddleware], enhancer);
+    reduxRouterMiddleware.listenForReplays(store);
+    if (storeOpts && storeOpts.persist) {
         persistStore(store, storeOpts.persist, storeOpts.onPersist);
-    } else {
-        store = DebugUtils.createDebugStore(rootReducer, defaultState);
     }
     SecurityUtils.setStore(store);
     return store;
