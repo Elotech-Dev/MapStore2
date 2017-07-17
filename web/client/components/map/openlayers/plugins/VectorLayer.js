@@ -162,7 +162,7 @@ Layers.registerType('vector', {
                 f.getGeometry().transform(oldCrs, newCrs);
             });
         }
-        if(!newOptions.overrideOLStyle) {
+        if(!newOptions.nativeStyle && !newOptions.overrideOLStyle) {
             layer.setStyle((feature) => styleFunction(feature, newOptions));
         }
     },
