@@ -199,6 +199,12 @@ var OpenlayersMap = React.createClass({
             }, 0);
         }
 
+        if (this.map && newProps.style !== this.props.style) {
+            setTimeout(() => {
+                this.map.updateSize();
+            }, 0);
+        }
+
         if (this.map && ((this.props.projection !== newProps.projection) || this.haveResolutionsChanged(newProps))) {
             const center = CoordinatesUtils.reproject([
                 this.props.center.x,

@@ -107,7 +107,9 @@ const MapPlugin = React.createClass({
                 <plugins.Map id="map"
                     {...this.props.options}
                     {...this.props.map}
-                    zoomControl={this.props.zoomControl}>
+                    zoomControl={this.props.zoomControl}
+                    style={this.props.style}
+                >
                     {this.renderLayers()}
                     {this.renderSupportTools()}
                 </plugins.Map>
