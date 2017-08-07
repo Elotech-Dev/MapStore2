@@ -21,18 +21,20 @@ var warningFilterKey = function(warning) {
     return warning.indexOf("Warning: owner-based and parent-based contexts differ") >= 0;
 };
 
+var loggerFilter = (getState, action) => action.type !== 'CHANGE_MOUSE_POSITION';
+
 var DebugUtils = {
     createDebugStore: function(reducer, initialState, userMiddlewares, enhancer) {
         let finalCreateStore;
         if (__DEVTOOLS__ && urlQuery.debug) {
-            let logger = require('redux-logger')();
+            let logger = require('redux-logger')({predicate: loggerFilter});
             let immutable = require('redux-immutable-state-invariant')();
             let middlewares = (userMiddlewares || []).concat([immutable, thunkMiddleware, logger]);
             const {persistState} = require('redux-devtools');
             const DevTools = require('../components/development/DevTools');
             finalCreateStore = compose(
               applyMiddleware.apply(null, middlewares),
-            window.devToolsExtension ? window.devToolsExtension() : DevTools.instrument(),
+            window.__REDUX_DEVTOOLS_EXTENSION__ ? window.__REDUX_DEVTOOLS_EXTENSION__({actionsBlacklist: ['CHANGE_MOUSE_POSITION']}) : DevTools.instrument(),
               persistState(window.location.href.match(/[?&]debug_session=([^&]+)\b/))
           )(createStore);
         } else {

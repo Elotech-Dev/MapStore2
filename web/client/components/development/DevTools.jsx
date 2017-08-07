@@ -10,10 +10,15 @@ const React = require('react');
 const { createDevTools } = require('redux-devtools');
 const LogMonitor = require('redux-devtools-log-monitor').default;
 const DockMonitor = require('redux-devtools-dock-monitor').default;
+const FilterMonitor = require('redux-devtools-filter-actions').default;
 
 module.exports = createDevTools(
    <DockMonitor toggleVisibilityKey="ctrl-h"
                 changePositionKey="ctrl-q">
-       <LogMonitor theme="tomorrow" />
+        <FilterMonitor
+            blacklist={['CHANGE_MOUSE_POSITION']}
+        >
+            <LogMonitor theme="tomorrow" />
+        </FilterMonitor>
    </DockMonitor>
 );
