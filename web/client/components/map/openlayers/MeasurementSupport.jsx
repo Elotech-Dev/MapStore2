@@ -163,7 +163,8 @@ const MeasurementSupport = React.createClass({
                 this.calculateGeodesicArea(this.sketchFeature.getGeometry().getLinearRing(0).getCoordinates()) : 0,
             bearing: this.props.measurement.geomType === 'Bearing' ? bearing : 0,
             lenUnit: this.props.measurement.lenUnit,
-            areaUnit: this.props.measurement.areaUnit
+            areaUnit: this.props.measurement.areaUnit,
+            coords: sketchCoords
         };
 
         this.props.changeMeasurementState(newMeasureState);

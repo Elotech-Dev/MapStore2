@@ -39,7 +39,8 @@ function measurement(state = {
                 area: action.area,
                 bearing: action.bearing,
                 lenUnit: action.lenUnit,
-                areaUnit: action.areaUnit
+                areaUnit: action.areaUnit,
+                coords: action.coords
             });
         default:
             return state;

@@ -28,7 +28,8 @@ function changeMeasurementState(measureState) {
         area: measureState.area,
         bearing: measureState.bearing,
         lenUnit: measureState.lenUnit,
-        areaUnit: measureState.areaUnit
+        areaUnit: measureState.areaUnit,
+        coords: measureState.coords
     };
 }
 
